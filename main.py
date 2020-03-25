@@ -6,18 +6,17 @@ import string
 # import pandas as pd
 # import random
 
-# load english train and test data
 englishTrain, englishTrainAlphabet = ns.loadTextData("data/english.test")
 
 englishTest, englishTestAlphabet = ns.loadTextData("data/english.train")
 
 
-# do some time testing for r-chunk
 def test_r_chunk():
     nRange = np.arange(1, 1000, 100)
-    sampleSizeList = [1.0, 0.75, 0.5, 0.25, 0.1]
+    # sampleSizeList = [1.0, 0.75, 0.5, 0.25, 0.1]
+    sampleRList = [4, 5, 6, 7, 8]
     plt.figure()
-    for s in sampleSizeList:
+    for s in sampleRList:
         x = []
         timeList = []
         for n in nRange:
@@ -26,17 +25,18 @@ def test_r_chunk():
             detectors = ns.trainRChunk(englishTrain,
                                        englishTrainAlphabet,
                                        n,
-                                       int(s*len(englishTrain)),
-                                       7,
+                                       int(1.0 * len(englishTrain)),
+                                       s,
                                        len(englishTrain[0]))
             endTime = time.time()
             timeList.append(endTime - startTime)
-        plt.scatter(x, timeList, label=str(s))
-    plt.title("Naive r-chunk training time")
+        plt.plot(x, timeList, label=str(s))
+    plt.title("r-chunk training time")
     plt.xlabel("Number of Detectors Trained")
-    plt.ylabel("Wall time(seconds)")
-    plt.legend(title="Fraction of Training Strings Tested")
-    plt.savefig("plots/r_chunkTrainTime.jpg")
+    plt.ylabel("time(seconds)")
+    # plt.legend(title="Fraction of Training Strings Tested")
+    plt.legend(title="Varying r values")
+    plt.savefig("plots/r_chunkTrainTime_line_n_r.jpg")
 
 
 def test_r_contiguous():
@@ -45,9 +45,10 @@ def test_r_contiguous():
     :return:
     """
     nRange = np.arange(1, 1000, 100)
-    sampleSizeList = [1.0, 0.75, 0.5, 0.25, 0.1]
+    # sampleSizeList = [1.0, 0.75, 0.5, 0.25, 0.1]
+    sampleRList = [4, 5, 6, 7, 8]
     plt.figure()
-    for s in sampleSizeList:
+    for s in sampleRList:
         x = []
         timeList = []
         for n in nRange:
@@ -58,18 +59,19 @@ def test_r_contiguous():
             detectors = ns.trainRContig(englishTrain,
                                         englishTrainAlphabet,
                                         n,
-                                        int(s * len(englishTrain)),
-                                        4,
+                                        int(1.0 * len(englishTrain)),
+                                        s,
                                         len(englishTrain[0]))
 
             endTime = time.time()
             timeList.append(endTime - startTime)
-        plt.scatter(x, timeList, label=str(s))
-    plt.title("Naive r-contiguous training time")
+        plt.plot(x, timeList, label=str(s))
+    plt.title("r-contiguous training time")
     plt.xlabel("Number of Detectors Trained")
-    plt.ylabel("Wall time(seconds)")
-    plt.legend(title="test")
-    plt.savefig("plots/r_contiguousTrainTime.jpg")
+    plt.ylabel("time(seconds)")
+    # plt.legend(title="Fraction of Training Strings Tested")
+    plt.legend(title="Varying r values")
+    plt.savefig("plots/r_contiguousTrainTime_line_n_r.jpg")
 
 
 def classifying_languages():
@@ -166,14 +168,14 @@ def classify_cardio():
                 anomalies += 1
                 break
     print(f"Cardio - Time: {deltaTime} Anamolies={anomalies}/{numTrueAnomalies} TruePrec: {anomalies/numTrueAnomalies}")
-    pass
+
 
 
 # print(max_val, min_val)
 
-# test_r_chunk()
-# test_r_contiguous()
+test_r_chunk()
+#test_r_contiguous()
 # classifying_languages()
 # ns.check_for_split(data)
 
-classify_cardio()
+# classify_cardio()

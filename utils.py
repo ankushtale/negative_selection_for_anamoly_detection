@@ -1,6 +1,3 @@
-"""A very simple negative selection algorithm
-loosely inspired by the work here: http://johannes-textor.name/negativeselection.html"""
-
 import random
 import csv
 
@@ -182,7 +179,7 @@ def trainRChunk(T, A, n, k, r, l, unique=True):
 			if td.testDetector(Tlist[i]):
 				goodDetector = False
 				break
-		if(goodDetector):
+		if goodDetector:
 			detectors.add(td)
 
 	return list(detectors)
