@@ -75,7 +75,7 @@ def test_r_contiguous():
 
 
 def classifying_languages():
-    r = 7
+    r = 4
     hilTest, hilAlphabet = ns.loadTextData("data/hiligaynon.txt")
     midTest, midAlphabet = ns.loadTextData("data/middle-english.txt")
     dietschTest, dietshAlphabet = ns.loadTextData("data/plautdietsch.txt")
@@ -92,15 +92,20 @@ def classifying_languages():
     languageData = [hilTest, midTest, dietschTest, xhosaTest]
     numTrueAnomalies = [0, 0, 0, 0]
     englishSet = set(englishTrain)
+    anomaly_scores = [[], [], [], []]
 
-    n = 10000
-    r = 4
+    n = 100000
 
     result = "Name\t" + \
              "repSize\t" + \
              "time\t" + \
              "count\t" + \
-             "truePerc"
+             "truePerc\t" + \
+             "AnomalyScore\t" + \
+             "Threshold\t" + \
+             "FP\t" + \
+             "TP_Above\t" + \
+             "TP_Below\t"
     result = result.expandtabs(20)
     print(result)
 
@@ -123,25 +128,51 @@ def classifying_languages():
             if testString not in englishSet:
                 numTrueAnomalies[i] += 1
 
+            anomaly_score = 1
+            flag = False
+
             for d in detectors:
                 if d.testDetector(testString):
-                    anomalies += 1
-                    break
+                    if not flag:
+                        anomalies += 1
+                    flag = True
+                    anomaly_score += 1
+            anomaly_scores[i].append(np.log10(anomaly_score))
+
+        n_normal_above_threshold = 0
+        n_anomaly_above_threshold = 0
+        n_anomaly_below_threshold = 0
+        threshold = 0.5
+
+        for anomaly_score in anomaly_scores[i]:
+            if anomaly_score == 0.0:
+                n_normal_above_threshold += 1
+            elif 0 < anomaly_score < threshold:
+                n_anomaly_below_threshold += 1
+            else:
+                n_anomaly_above_threshold += 1
+
         result = "" + languageNames[i] + "\t" + \
                  str(n) + "\t" + str(deltaTime) + "\t" + \
-                 str(anomalies) + "/" + str(numTrueAnomalies[i]) + "\t" + str(
-            float(anomalies) / float(numTrueAnomalies[i]))
+                 str(anomalies) + "/" + str(numTrueAnomalies[i]) + "\t" + \
+                 str(float(anomalies) / float(numTrueAnomalies[i])) + "\t" + \
+                 str(sum(anomaly_scores[i])) + "\t" + \
+                 str(threshold) + "\t" + \
+                 str(float(n_normal_above_threshold)/float(numTrueAnomalies[i])) + "\t" + \
+                 str(float(n_anomaly_above_threshold)/float(numTrueAnomalies[i])) + "\t" + \
+                 str(float(n_anomaly_below_threshold)/float(numTrueAnomalies[i]))
         result = result.expandtabs(20)
         print(result)
 
 
 def classify_cardio():
-    r = 5
+    r = 6
     a = 10
     n_detectors = 10000
     alphabets = list(string.ascii_lowercase[:a])
     numTrueAnomalies = 0
     anomalies = 0
+    anomaly_scores = []
 
     max_val, min_val, cardioTrain = ns.loadCSVData("data/cardio_train.csv")
     max_val, min_val, cardioTest = ns.loadCSVData("data/cardio_test.csv")
@@ -158,24 +189,161 @@ def classify_cardio():
                                 len(cardioTrainData[0]))
     endTime = time.time()
     deltaTime = endTime - startTime
-    print(deltaTime)
+    # print(deltaTime)
+
+    n_normal_above_threshold = 0
+    n_normal = 0
+    n_anomaly = 0
+    n_anomaly_above_threshold = 0
+    n_anomaly_below_threshold = 0
+    threshold = 0.5
+
     for testString in cardioTestData:
-        if testString not in cardioTrainData:
+        if testString[:-1] not in cardioTrainData:
             numTrueAnomalies += 1
+
+        anomaly_score = 1
+        flag = False
+
+        if testString[-1] == "f":
+            n_normal += 1
+        else:
+            n_anomaly += 1
 
         for d in detectors:
             if d.testDetector(testString):
-                anomalies += 1
-                break
-    print(f"Cardio - Time: {deltaTime} Anamolies={anomalies}/{numTrueAnomalies} TruePrec: {anomalies/numTrueAnomalies}")
+                if not flag:
+                    anomalies += 1
+                flag = True
+                anomaly_score += 1
+        anomaly_scores.append(np.log10(anomaly_score))
+    print(f"Normal count: {n_normal} Anomaly Count: {n_anomaly}")
 
+    for i, anomaly_score in enumerate(anomaly_scores):
+        if cardioTestData[i][-1] == 'f' and anomaly_score > threshold:
+            n_normal_above_threshold += 1
+        elif cardioTestData[i][-1] != 'f' and anomaly_score < threshold:
+            n_anomaly_below_threshold += 1
+        elif cardioTestData[i][-1] != 'f' and anomaly_score >= threshold:
+            n_anomaly_above_threshold += 1
+
+    result = "Name\t" + \
+             "repSize\t" + \
+             "time\t" + \
+             "count\t" + \
+             "truePerc\t" + \
+             "AnomalyScore\t" + \
+             "Threshold\t" + \
+             "FP\t" + \
+             "TP_Above\t" + \
+             "TP_Below\t"
+    result = result.expandtabs(20)
+    print(result)
+
+    result = "Cardio - Time" + "\t" + \
+             str(n_detectors) + "\t" + str(deltaTime) + "\t" + \
+             str(anomalies) + "/" + str(numTrueAnomalies) + "\t" + \
+             str(float(anomalies) / float(numTrueAnomalies)) + "\t" + \
+             str(sum(anomaly_scores)) + "\t" + \
+             str(threshold) + "\t" + \
+             str(float(n_normal_above_threshold) / float(n_normal)) + "\t" + \
+             str(float(n_anomaly_above_threshold) / float(n_anomaly)) + "\t" + \
+             str(float(n_anomaly_below_threshold) / float(n_anomaly))
+    result = result.expandtabs(20)
+    print(result)
+
+
+def classify_newdataset():
+    r = 5
+    n_detectors = 10000
+    numTrueAnomalies = 0
+    anomalies = 0
+    anomaly_scores = []
+
+    datasc_train, alphabets = ns.loadTextData("data/datasc23.train")
+    # alphabets, _ = ns.loadTextData("data/datasc23.alpha")
+    # alphabets = list(alphabets[0])
+    datasc_test, _ = ns.loadTextData("data/datasc23.3.test")
+    datasc_label, _ = ns.loadTextData("data/datasc23.3.labels")
+
+    startTime = time.time()
+    detectors = ns.trainRChunk(datasc_train,
+                                alphabets,
+                                n_detectors,
+                                int(len(datasc_train)),
+                                r,
+                                len(datasc_train[0]))
+    endTime = time.time()
+    deltaTime = endTime - startTime
+    # print(deltaTime)
+
+    n_normal_above_threshold = 0
+    n_normal = 0
+    n_anomaly = 0
+    n_anomaly_above_threshold = 0
+    n_anomaly_below_threshold = 0
+    threshold = 0.3
+
+    for i, testString in enumerate(datasc_test):
+        if testString not in datasc_label:
+            numTrueAnomalies += 1
+        anomaly_score = 1
+        flag = False
+
+        if datasc_label[i] == '0':
+            n_normal += 1
+        else:
+            n_anomaly += 1
+
+        for d in detectors:
+            if d.testDetector(testString):
+                if not flag:
+                    anomalies += 1
+                flag = True
+                anomaly_score += 1
+        anomaly_scores.append(np.log10(anomaly_score))
+
+    print(f"Normal count: {n_normal} Anomaly Count: {n_anomaly}")
+
+    for i, anomaly_score in enumerate(anomaly_scores):
+        if anomaly_score > threshold and datasc_label[i] == '0':
+            n_normal_above_threshold += 1
+        elif anomaly_score < threshold and datasc_label[i] == '1':
+            n_anomaly_below_threshold += 1
+        elif datasc_label[i] == '1':
+            n_anomaly_above_threshold += 1
+
+    result = "Name\t" + \
+             "repSize\t" + \
+             "time\t" + \
+             "count\t" + \
+             "truePerc\t" + \
+             "AnomalyScore\t" + \
+             "Threshold\t" + \
+             "FP\t" + \
+             "TP_Above\t" + \
+             "TP_Below\t"
+    result = result.expandtabs(20)
+    print(result)
+
+    result = "Datasc23" + "\t" + \
+             str(n_detectors) + "\t" + str(deltaTime) + "\t" + \
+             str(anomalies) + "/" + str(numTrueAnomalies) + "\t" + \
+             str(float(anomalies) / float(numTrueAnomalies)) + "\t" + \
+             str(sum(anomaly_scores)) + "\t" + \
+             str(threshold) + "\t" + \
+             str(float(n_normal_above_threshold) / float(n_normal)) + "\t" + \
+             str(float(n_anomaly_above_threshold) / float(n_anomaly)) + "\t" + \
+             str(float(n_anomaly_below_threshold) / float(n_anomaly))
+    result = result.expandtabs(20)
+    print(result)
 
 
 # print(max_val, min_val)
 
-test_r_chunk()
-#test_r_contiguous()
-# classifying_languages()
+# test_r_chunk()
+# test_r_contiguous()
+classifying_languages()
 # ns.check_for_split(data)
-
 # classify_cardio()
+# classify_newdataset()

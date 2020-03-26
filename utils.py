@@ -123,8 +123,8 @@ class rchunkDetector:
 		for i in range(r):
 			self.detectorString += A[random.randint(0, len(A)-1)]
 
-	def testDetector(self,s):
-		if s[self.i:] == self.detectorString:
+	def testDetector(self, s):
+		if s[self.i:self.i + self.r] == self.detectorString:
 			return True
 		return False
 
@@ -133,7 +133,7 @@ class rcontigDetector:
 	def __init__(self, r, l, A):
 		"""
 		:param r: length of substring for matching
-		:param l: length of strings in training se
+		:param l: length of strings in training set
 		:param A: alphabet to generate detector string
 		"""
 		self.r = r
@@ -194,7 +194,7 @@ def trainRContig(T, A, n, k, r, l, unique=True):
 	:param n: The number of detectors in resulting population
 	:param k: The number of strings to sample from T for training
 	:param r: The length of the chunk for matching
-	:param l:The length of strings in the training set
+	:param l: The length of strings in the training set
 	:param unique:
 	:return:
 	"""
